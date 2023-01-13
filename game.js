@@ -79,7 +79,7 @@ function update() {
     if(score>=1000 && score<10000){
       player.speed = player.originalspeed + 2;
     }
-    frame.Delay = 30/player.speed;
+    frame.Delay = 32/player.speed;
     frame.Counter++;
     if (frame.Counter >= frame.Delay) {
       player.current = (player.current + 1) % player.total;
