@@ -17,7 +17,7 @@ groundPNGPixels = 75;
 const groundImage = new Image();
 groundImage.src = './assets/ground.png';
 const PlayerSpriteSheet = new Image();
-PlayerSpriteSheet.src = './assets/spritesheet128.png';
+PlayerSpriteSheet.src = './assets/spritesheet128v2.png';
 const Background1Image = new Image();
 Background1Image.src = './assets/Background_01.png';
 const Background2Image = new Image();
@@ -129,23 +129,35 @@ function update() {
     
     col = player.current % player.PerRow;
     if (isJumping){
-      if (player.y>player.jumpHeight && player.jumpUp){
+      if (player.y>=(groundYPosition-((32/player.speed)*player.jumpSpeed)) && player.jumpUp){
         player.y -= player.jumpSpeed;
         row = 0;
-        col = 1;
+        col = 10;
+        ctx.drawImage(PlayerSpriteSheet, col*player.width, row*player.height, player.width, player.height, player.x, player.y, (128), (128))
+      }
+      if (player.y<(groundYPosition-((32/player.speed)*player.jumpSpeed)) && player.y>=(groundYPosition-((32/player.speed)*player.jumpSpeed*2)) && player.jumpUp){
+        player.y -= player.jumpSpeed;
+        row = 0;
+        col = 11;
+        ctx.drawImage(PlayerSpriteSheet, col*player.width, row*player.height, player.width, player.height, player.x, player.y, (128), (128))
+      }
+      if (player.y<(groundYPosition-((32/player.speed)*player.jumpSpeed*2)) && player.y>player.jumpHeight && player.jumpUp){
+        player.y -= player.jumpSpeed;
+        row = 0;
+        col = 13;
         ctx.drawImage(PlayerSpriteSheet, col*player.width, row*player.height, player.width, player.height, player.x, player.y, (128), (128))
       }
       if (player.y <= player.jumpHeight){
-        if (midAir==16){
+        if (midAir==18){
           player.y += player.jumpSpeed;
           player.jumpUp = false;
         }
         midAir++;
         row = 0;
-        col = 2;
+        col = 12;
         ctx.drawImage(PlayerSpriteSheet, col*player.width, row*player.height, player.width, player.height, player.x, player.y, (128), (128))
       }
-      if (player.y<=groundYPosition && !player.jumpUp){
+      if (player.y<=(groundYPosition-((32/player.speed)*player.jumpSpeed))  && !player.jumpUp){
         if (player.y == groundYPosition){
           isJumping = false;
           player.jumpUp = true;
@@ -154,7 +166,23 @@ function update() {
         else{
         player.y += player.jumpSpeed;
         row = 0;
-        col = 6;
+        col = 10;
+        ctx.drawImage(PlayerSpriteSheet, col*player.width, row*player.height, player.width, player.height, player.x, player.y, (128), (128))
+        }
+      }
+      if (player.y<=groundYPosition && player.y>(groundYPosition-((32/player.speed)*player.jumpSpeed)) && !player.jumpUp){
+        if (player.y == groundYPosition){
+          isJumping = false;
+          player.jumpUp = true;
+          midAir=0;
+          row = 0;
+        col = 9;
+        ctx.drawImage(PlayerSpriteSheet, col*player.width, row*player.height, player.width, player.height, player.x, player.y, (128), (128))
+        }
+        else{
+        player.y += player.jumpSpeed;
+        row = 0;
+        col = 9;
         ctx.drawImage(PlayerSpriteSheet, col*player.width, row*player.height, player.width, player.height, player.x, player.y, (128), (128))
         }
       }
