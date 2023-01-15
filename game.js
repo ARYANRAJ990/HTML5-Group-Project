@@ -6,7 +6,7 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const bgm = document.getElementById('bgm');
 bgm.loop = true;
-
+bgm.volume=0.01;
 // Set up game variables
 let isPlaying = false;
 let isJumping = false;
@@ -22,6 +22,10 @@ const Background1Image = new Image();
 Background1Image.src = './assets/Background_01.png';
 const Background2Image = new Image();
 Background2Image.src = './assets/Background_02.png';
+const smokeCloud = new Image();
+smokeCloud.src = './assets/cloud.png';
+const smokeBigCloud = new Image();
+smokeBigCloud.src = './assets/blacksmoke.png';
 
 const ground = {
   x: 0,
@@ -29,7 +33,18 @@ const ground = {
   width: groundPNGPixels,
   height: groundPNGPixels,
 };
-
+const cloud={
+  x: 0,
+  y: 0,
+  width: 0,
+  height: 0
+}
+const bigSmoke = {
+  x: 0,
+  y: 0,
+  width: 0,
+  height: 0
+}
 const Background1 = {
   x: 0,
   y: 0,
@@ -40,7 +55,6 @@ const Background2 = {
   y: 0,
   speed:2
 }
-
 // Set up player
 const player = {
   width: 128,
@@ -49,7 +63,7 @@ const player = {
   rows: 1,
   total: 10,
   current: 0,
-  x: 0,
+  x: 50,
   y: 0,
   originalspeed: 0,
   speed: 3,
@@ -58,6 +72,13 @@ const player = {
   jumpUp: true,
   jumpSpeed: 3
 };
+const playerBox = {
+  x: player.x+32,
+  y: player.y+8,
+  width: player.width-64,
+  height: player.height-16
+};
+
 const frame = {
   Counter: 0,
   Delay: 0
@@ -66,6 +87,29 @@ player.originalspeed = player.speed
 let groundYPosition = (canvas.height-groundPNGPixels-144)  + (24);
 player.y = groundYPosition;
 let midAir = 0;
+const isdrawBox = true;
+
+function checkCollision(a, b){
+  if (a.x < b.x + b.width &&
+    a.x + a.width > b.x &&
+    a.y < b.y + b.height &&
+    a.height + a.y > b.y) {
+    return true;
+  }
+  else{
+    return false;
+  }
+}
+
+function drawBox(){
+  if(!isdrawBox){
+    return
+  }
+  // inside the checkCollision() function
+  ctx.strokeStyle = "red"; // set the color of the rectangle border
+  ctx.lineWidth = 2; // set the width of the rectangle border
+  ctx.strokeRect(playerBox.x, playerBox.y, playerBox.width, playerBox.height); // draw the player bounding box
+}
 
 function update() {
     // Check if player is playing
@@ -76,9 +120,23 @@ function update() {
     if(score>=100 && score<1000){
       player.speed = player.originalspeed + 1;
     }
-    if(score>=1000 && score<10000){
+    if(score>=1000 && score<2000){
       player.speed = player.originalspeed + 2;
     }
+    if(score>=2000 && score<4000){
+      player.speed = player.originalspeed + 3;
+    }
+    if(score>=4000 && score<8000){
+      player.speed = player.originalspeed + 4;
+    }
+    if(score>=8000 && score<16000){
+      player.speed = player.originalspeed + 5;
+    }
+    if(score>=16000){
+      player.speed = player.originalspeed + 6;
+    }
+    playerBox.x = player.x+36;
+    playerBox.y = player.y+8;
     frame.Delay = 32/player.speed;
     frame.Counter++;
     if (frame.Counter >= frame.Delay) {
@@ -115,6 +173,11 @@ function update() {
     ctx.drawImage(Background1Image, 0, 0, Background1Image.width, Background1Image.height, Background1.x + canvas.width, 0, canvas.width, canvas.height);
     ctx.drawImage(Background2Image, 0, 0, Background2Image.width, Background2Image.height, Background2.x, 0, canvas.width, canvas.height);
     ctx.drawImage(Background2Image, 0, 0, Background2Image.width, Background2Image.height, Background2.x + canvas.width, 0, canvas.width, canvas.height);
+    ctx.globalAlpha = 0.8;
+    ctx.drawImage(smokeBigCloud, 0, 0, smokeBigCloud.width, smokeBigCloud.height, bigSmoke.x, bigSmoke.y, 960, 400)
+    ctx.globalAlpha = 1;
+    ctx.drawImage(smokeBigCloud, 0, 0, smokeBigCloud.width, smokeBigCloud.height, bigSmoke.x, bigSmoke.y-100, 960, 400)
+    
 
     // Draw ground
     let groundend = 0;
@@ -134,21 +197,24 @@ function update() {
         row = 0;
         col = 10;
         ctx.drawImage(PlayerSpriteSheet, col*player.width, row*player.height, player.width, player.height, player.x, player.y, (128), (128))
+        drawBox();
       }
       if (player.y<(groundYPosition-((32/player.speed)*player.jumpSpeed)) && player.y>=(groundYPosition-((32/player.speed)*player.jumpSpeed*2)) && player.jumpUp){
         player.y -= player.jumpSpeed;
         row = 0;
         col = 11;
         ctx.drawImage(PlayerSpriteSheet, col*player.width, row*player.height, player.width, player.height, player.x, player.y, (128), (128))
+        drawBox();
       }
       if (player.y<(groundYPosition-((32/player.speed)*player.jumpSpeed*2)) && player.y>player.jumpHeight && player.jumpUp){
         player.y -= player.jumpSpeed;
         row = 0;
         col = 13;
         ctx.drawImage(PlayerSpriteSheet, col*player.width, row*player.height, player.width, player.height, player.x, player.y, (128), (128))
+        drawBox();
       }
       if (player.y <= player.jumpHeight){
-        if (midAir==18){
+        if (midAir==16){
           player.y += player.jumpSpeed;
           player.jumpUp = false;
         }
@@ -156,6 +222,7 @@ function update() {
         row = 0;
         col = 12;
         ctx.drawImage(PlayerSpriteSheet, col*player.width, row*player.height, player.width, player.height, player.x, player.y, (128), (128))
+        drawBox();
       }
       if (player.y<=(groundYPosition-((32/player.speed)*player.jumpSpeed))  && !player.jumpUp){
         if (player.y == groundYPosition){
@@ -168,6 +235,7 @@ function update() {
         row = 0;
         col = 10;
         ctx.drawImage(PlayerSpriteSheet, col*player.width, row*player.height, player.width, player.height, player.x, player.y, (128), (128))
+        drawBox();
         }
       }
       if (player.y<=groundYPosition && player.y>(groundYPosition-((32/player.speed)*player.jumpSpeed)) && !player.jumpUp){
@@ -178,18 +246,21 @@ function update() {
           row = 0;
         col = 9;
         ctx.drawImage(PlayerSpriteSheet, col*player.width, row*player.height, player.width, player.height, player.x, player.y, (128), (128))
+        drawBox();
         }
         else{
         player.y += player.jumpSpeed;
         row = 0;
         col = 9;
         ctx.drawImage(PlayerSpriteSheet, col*player.width, row*player.height, player.width, player.height, player.x, player.y, (128), (128))
+        drawBox();
         }
       }
     }
     else {
       row = 0; //running
     ctx.drawImage(PlayerSpriteSheet, col*player.width, row*player.height, player.width, player.height, player.x, player.y, (128), (128))
+    drawBox();
     }
 
     
@@ -218,7 +289,7 @@ function update() {
     isJumping = false;
     score = 0;
     ground.x = 0;
-    player.x = 0;
+    player.x = 50;
     player.y = groundYPosition;
     player.current = 0;
     player.jumpUp = true;
@@ -305,11 +376,11 @@ document.addEventListener('keyup', function(event) {
     if(elapsedTime<=80){
       player.jumpHeightVariable = 40*3;
     }
-    if(elapsedTime>80 && elapsedTime<=180){
+    if(elapsedTime>80 && elapsedTime<=200){
       player.jumpHeightVariable = ((elapsedTime-(elapsedTime%2))/2)*3;
     }
-    if(elapsedTime>180){
-      player.jumpHeightVariable = 90*3;
+    if(elapsedTime>200){
+      player.jumpHeightVariable = 100*3;
     }
     
     jump();
