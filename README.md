@@ -1,3 +1,5 @@
+Swachh Bharat Sprint
+
 This repository is for the HTML5 Group Project developed by Aryan, Omkar, and Arsh. The project is a Javascript-based game that can be run by simply downloading the repository and opening the index.html file in your browser.
 
 Please note that currently, the only available player input is the jump function. We are actively working on adding more features and gameplay mechanics to make the experience more enjoyable.
