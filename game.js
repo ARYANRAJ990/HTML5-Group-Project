@@ -22,10 +22,18 @@ const Background1Image = new Image();
 Background1Image.src = './assets/Background_01.png';
 const Background2Image = new Image();
 Background2Image.src = './assets/Background_02.png';
-const smokeCloud = new Image();
-smokeCloud.src = './assets/cloud.png';
 const smokeBigCloud = new Image();
 smokeBigCloud.src = './assets/blacksmoke.png';
+const smallGarbage = new Image();
+smallGarbage.src = './assets/Garbage1.png';
+const bigGarbage = new Image();
+bigGarbage.src = './assets/Garbage2.png';
+const deadlyGarbage = new Image();
+deadlyGarbage.src = './assets/DeadlyGarbage.png';
+const closedTrashCan = new Image();
+closedTrashCan.src = './assets/TrashCanClosed.png';
+const openTrashCan = new Image();
+openTrashCan.src = './assets/TrashCanOpen.png';
 
 const ground = {
   x: 0,
@@ -33,12 +41,6 @@ const ground = {
   width: groundPNGPixels,
   height: groundPNGPixels,
 };
-const cloud={
-  x: 0,
-  y: 0,
-  width: 0,
-  height: 0
-}
 const bigSmoke = {
   x: 0,
   y: 0,
@@ -78,8 +80,42 @@ const playerBox = {
   width: player.width-64,
   height: player.height-16
 };
-
+//trash
+const smallTrash = {
+  x:canvas.width+64,
+  y:0,
+  width: 64,
+  height: 64,
+  isSpawned: false
+}
+const bigTrash = {
+  x:canvas.width+128,
+  y:0,
+  width:96,
+  height:96,
+  isSpawned: false
+}
+const deadlyTrash = {
+  x: canvas.width + 96,
+  y:0,
+  width:128,
+  height:128,
+  isSpawned: false
+}
+const trashCan = {
+  x: canvas.width + 96,
+  y:0,
+  width:52,
+  height:96,
+  isSpawned: false,
+  current: openTrashCan
+}
 const frame = {
+  Counter: 0,
+  Delay: 0
+}
+const pollution = {
+  amount: 0,
   Counter: 0,
   Delay: 0
 }
@@ -88,6 +124,8 @@ let groundYPosition = (canvas.height-groundPNGPixels-144)  + (24);
 player.y = groundYPosition;
 let midAir = 0;
 const isdrawBox = true;
+let barWidth = 0;
+const maxWidth = 100;
 
 function checkCollision(a, b){
   if (a.x < b.x + b.width &&
@@ -109,12 +147,75 @@ function drawBox(){
   ctx.strokeStyle = "red"; // set the color of the rectangle border
   ctx.lineWidth = 2; // set the width of the rectangle border
   ctx.strokeRect(playerBox.x, playerBox.y, playerBox.width, playerBox.height); // draw the player bounding box
+  ctx.strokeRect(deadlyTrash.x, deadlyTrash.y, deadlyTrash.width, deadlyTrash.height);
+  ctx.strokeRect(smallTrash.x, smallTrash.y, smallTrash.width, smallTrash.height);
+  ctx.strokeRect(bigTrash.x, bigTrash.y, bigTrash.width, bigTrash.height);
+  ctx.strokeRect(trashCan.x, trashCan.y, trashCan.width, trashCan.height);
+}
+function spawnItem(item, itemImage, width, height){
+  if (item.x <= -item.width){
+    item.isSpawned = false;
+  }
+  if (item.isSpawned){
+    item.x -= player.speed;
+    ctx.drawImage(itemImage, 0, 0, itemImage.width, itemImage.height, item.x, item.y, width, height);
+    return
+  }
+  if (!item.isSpawned){
+    item.x = canvas.width+item.width;
+  }
 }
 
 function update() {
     // Check if player is playing
     if (!isPlaying) {
       return;
+    }
+
+    pollution.Delay = 500;
+    pollution.Counter++;
+    if (pollution.Counter >= pollution.Delay) {
+      pollution.Counter = 0;
+      pollution.amount += player.speed;
+    }
+
+    if (Math.random() < 0.005 && !smallTrash.isSpawned){
+      const random = Math.random();
+      if (random<=0.33){
+        smallTrash.y = canvas.height-ground.height-64;
+      }
+      else if(random>0.33 && random<=0.66){
+        smallTrash.y = canvas.height-ground.height-256+24;
+      }
+      else{
+        smallTrash.y = canvas.height-ground.height-384+24;
+      }
+      smallTrash.isSpawned = true;
+    }
+
+    if (Math.random() < 0.001 && !bigTrash.isSpawned){
+      const random = Math.random();
+      if (random<=0.33){
+        bigTrash.y = canvas.height-ground.height-96;
+      }
+      else if(random>0.33 && random<=0.66){
+        bigTrash.y = canvas.height-ground.height-256;
+      }
+      else{
+        bigTrash.y = canvas.height-ground.height-384;
+      }
+      bigTrash.isSpawned = true;
+    }
+
+    if (Math.random() < 0.002 && !deadlyTrash.isSpawned){
+      deadlyTrash.y = canvas.height-ground.height-110;
+      deadlyTrash.isSpawned = true;
+    }
+
+    
+    if (score>0 && score%400 == 0 && !trashCan.isSpawned){
+      trashCan.y = canvas.height-ground.height-96;
+      trashCan.isSpawned = true;
     }
 
     if(score>=100 && score<1000){
@@ -143,7 +244,9 @@ function update() {
       player.current = (player.current + 1) % player.total;
       frame.Counter = 0;
       score++;
+      bigSmoke.x = bigSmoke.x-1;
     }
+    bigSmoke.y = -500 + (pollution.amount*5);
 
     player.jumpHeight = groundYPosition - (player.jumpHeightVariable);
 
@@ -162,6 +265,9 @@ function update() {
     if (Background2.x <= (-canvas.width)) {
       Background2.x = 0;
      }
+     if (bigSmoke.x <=(-canvas.width)){
+      bigSmoke.x = 0;
+     }
 }
   
   // Set up draw function
@@ -172,12 +278,7 @@ function update() {
     ctx.drawImage(Background1Image, 0, 0, Background1Image.width, Background1Image.height, Background1.x, 0, canvas.width, canvas.height);
     ctx.drawImage(Background1Image, 0, 0, Background1Image.width, Background1Image.height, Background1.x + canvas.width, 0, canvas.width, canvas.height);
     ctx.drawImage(Background2Image, 0, 0, Background2Image.width, Background2Image.height, Background2.x, 0, canvas.width, canvas.height);
-    ctx.drawImage(Background2Image, 0, 0, Background2Image.width, Background2Image.height, Background2.x + canvas.width, 0, canvas.width, canvas.height);
-    ctx.globalAlpha = 0.8;
-    ctx.drawImage(smokeBigCloud, 0, 0, smokeBigCloud.width, smokeBigCloud.height, bigSmoke.x, bigSmoke.y, 960, 400)
-    ctx.globalAlpha = 1;
-    ctx.drawImage(smokeBigCloud, 0, 0, smokeBigCloud.width, smokeBigCloud.height, bigSmoke.x, bigSmoke.y-100, 960, 400)
-    
+    ctx.drawImage(Background2Image, 0, 0, Background2Image.width, Background2Image.height, Background2.x + canvas.width, 0, canvas.width, canvas.height);  
 
     // Draw ground
     let groundend = 0;
@@ -189,7 +290,19 @@ function update() {
       groundend = groundend + ground.width;
     }
 
-    
+    if(smallTrash.isSpawned){
+      spawnItem(smallTrash, smallGarbage, 64, 64);
+    }
+    if(bigTrash.isSpawned){
+      spawnItem(bigTrash, bigGarbage, 96, 96);
+    }
+    if(deadlyTrash.isSpawned){
+      spawnItem(deadlyTrash, deadlyGarbage, 128, 128);
+    }
+    if(trashCan.isSpawned){
+      spawnItem(trashCan, trashCan.current, 52, 96);
+    }
+
     col = player.current % player.PerRow;
     if (isJumping){
       if (player.y>=(groundYPosition-((32/player.speed)*player.jumpSpeed)) && player.jumpUp){
@@ -214,7 +327,7 @@ function update() {
         drawBox();
       }
       if (player.y <= player.jumpHeight){
-        if (midAir==16){
+        if (midAir==12){
           player.y += player.jumpSpeed;
           player.jumpUp = false;
         }
@@ -263,10 +376,21 @@ function update() {
     drawBox();
     }
 
-    
+    ctx.globalAlpha = 0.8;
+    ctx.drawImage(smokeBigCloud, 0, 0, smokeBigCloud.width, smokeBigCloud.height, bigSmoke.x, bigSmoke.y, 960, 536);
+    ctx.drawImage(smokeBigCloud, 0, 0, smokeBigCloud.width, smokeBigCloud.height, bigSmoke.x + canvas.width, bigSmoke.y, 960, 536);
+    ctx.globalAlpha = 1;
+    ctx.drawImage(smokeBigCloud, 0, 0, smokeBigCloud.width, smokeBigCloud.height, bigSmoke.x, bigSmoke.y-100, 960, 536);
+    ctx.drawImage(smokeBigCloud, 0, 0, smokeBigCloud.width, smokeBigCloud.height, bigSmoke.x + canvas.width, bigSmoke.y-100, 960, 536);
     
     ctx.font = '16px Arial';
     ctx.fillText(score, canvas.width - ctx.measureText(score).width - 10, 20);
+    ctx.fillStyle = "red";
+    const pollutionText = "Pollution";
+    ctx.fillText(pollutionText, 10, 20);
+    ctx.strokeStyle = "red";
+    ctx.strokeRect(10, 30, 100, 10);
+    ctx.fillRect(10 , 30, pollution.amount, 10);
   }
   
   // Set up game loop
@@ -293,10 +417,25 @@ function update() {
     player.y = groundYPosition;
     player.current = 0;
     player.jumpUp = true;
+    smallTrash.x = canvas.width;
+    smallTrash.isSpawned = false;
+    bigTrash.x = canvas.width;
+    bigTrash.isSpawned = false;
+    deadlyTrash.x = canvas.width;
+    deadlyTrash.isSpawned = false;
+    trashCan.x = canvas.width;
+    trashCan.isSpawned = false;
+    ctx.textAlign = "left";
     // Start game loop
     loop();
   }
   function stopGame() {
+    ctx.font = "70px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Game Over", canvas.width/2, canvas.height/2);
+    ctx.font = "35px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Score: "+score, canvas.width/2, canvas.height/2+70);
     isPlaying = false;
     score = 0;
     ground.x = 0;
@@ -376,11 +515,11 @@ document.addEventListener('keyup', function(event) {
     if(elapsedTime<=80){
       player.jumpHeightVariable = 40*3;
     }
-    if(elapsedTime>80 && elapsedTime<=200){
+    if(elapsedTime>80 && elapsedTime<=180){
       player.jumpHeightVariable = ((elapsedTime-(elapsedTime%2))/2)*3;
     }
-    if(elapsedTime>200){
-      player.jumpHeightVariable = 100*3;
+    if(elapsedTime>180){
+      player.jumpHeightVariable = 90*3;
     }
     
     jump();
