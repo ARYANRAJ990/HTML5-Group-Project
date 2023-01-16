@@ -10,6 +10,7 @@ bgm.volume=0.01;
 // Set up game variables
 let isPlaying = false;
 let isJumping = false;
+let gameStarted = false;
 let score = 0;
 groundPNGPixels = 75;
 
@@ -34,6 +35,8 @@ const closedTrashCan = new Image();
 closedTrashCan.src = './assets/TrashCanClosed.png';
 const openTrashCan = new Image();
 openTrashCan.src = './assets/TrashCanOpen.png';
+const MainMenu = new Image();
+MainMenu.src = './assets/MainMenu.png';
 
 const ground = {
   x: 0,
@@ -46,17 +49,17 @@ const bigSmoke = {
   y: 0,
   width: 0,
   height: 0
-}
+};
 const Background1 = {
   x: 0,
   y: 0,
   speed:1
-}
+};
 const Background2 = {
   x: 0,
   y: 0,
   speed:2
-}
+};
 // Set up player
 const player = {
   width: 128,
@@ -72,7 +75,9 @@ const player = {
   jumpHeight: 180,
   jumpHeightVariable: 0,
   jumpUp: true,
-  jumpSpeed: 3
+  jumpSpeed: 3,
+  inventory: 0,
+  isDead:false
 };
 const playerBox = {
   x: player.x+32,
@@ -87,21 +92,21 @@ const smallTrash = {
   width: 64,
   height: 64,
   isSpawned: false
-}
+};
 const bigTrash = {
   x:canvas.width+128,
   y:0,
   width:96,
   height:96,
   isSpawned: false
-}
+};
 const deadlyTrash = {
   x: canvas.width + 96,
   y:0,
   width:128,
   height:128,
   isSpawned: false
-}
+};
 const trashCan = {
   x: canvas.width + 96,
   y:0,
@@ -109,23 +114,25 @@ const trashCan = {
   height:96,
   isSpawned: false,
   current: openTrashCan
-}
+};
 const frame = {
   Counter: 0,
   Delay: 0
-}
+};
 const pollution = {
   amount: 0,
   Counter: 0,
   Delay: 0
-}
+};
+let occurence = 1;
 player.originalspeed = player.speed
 let groundYPosition = (canvas.height-groundPNGPixels-144)  + (24);
 player.y = groundYPosition;
 let midAir = 0;
-const isdrawBox = true;
 let barWidth = 0;
 const maxWidth = 100;
+const isdrawBox = false;
+const godMode = false;
 
 function checkCollision(a, b){
   if (a.x < b.x + b.width &&
@@ -171,7 +178,54 @@ function update() {
     if (!isPlaying) {
       return;
     }
-
+    if(godMode){
+      player.inventory = 9999;
+    }
+    if(checkCollision(playerBox, smallTrash)){
+      smallTrash.isSpawned = false;
+      smallTrash.x = canvas.width;
+      if (player.speed<=5){
+        player.inventory += 3;
+      }
+      else if(player.speed>5){
+        player.inventory += 6;
+      }
+    }
+    if(checkCollision(playerBox, bigTrash)){
+      bigTrash.isSpawned = false;
+      bigTrash.x = canvas.width;
+      if (player.speed<=5){
+        player.inventory += 6;
+      }
+      else if(player.speed>5){
+        player.inventory += 12;
+      }
+    }
+    if(checkCollision(playerBox, trashCan)){
+      trashCan.current = closedTrashCan;
+      if (pollution.amount>=player.inventory){
+        pollution.amount = pollution.amount-player.inventory;
+        player.inventory = 0;
+      }
+      else{
+        player.inventory = player.inventory-pollution.amount;
+        pollution.amount = 0;
+      }
+    }
+    if(checkCollision(deadlyTrash, trashCan)){
+      deadlyTrash.isSpawned = false;
+      deadlyTrash.x = canvas.width;
+    }
+    if(checkCollision(playerBox, deadlyTrash)){
+      if (godMode){
+        console.log("Godmode enabled");        
+      }
+      else{
+        deadlyTrash.isSpawned = false;
+        player.isDead = true;
+      }
+      
+    }
     pollution.Delay = 500;
     pollution.Counter++;
     if (pollution.Counter >= pollution.Delay) {
@@ -179,7 +233,20 @@ function update() {
       pollution.amount += player.speed;
     }
 
-    if (Math.random() < 0.005 && !smallTrash.isSpawned){
+    if (player.speed <= 4){
+      occurence = 1;
+    }
+    else if(player.speed>4 && player.speed<=6){
+      occurence = 2;
+    }
+    else if(player.speed>6 && player.speed<=8){
+      occurence = 3;
+    }
+    else if(player.speed>9 && player.speed<=9){
+      occurence = 4;
+    }
+
+    if (Math.random() < 0.005*occurence && !smallTrash.isSpawned){
       const random = Math.random();
       if (random<=0.33){
         smallTrash.y = canvas.height-ground.height-64;
@@ -193,7 +260,7 @@ function update() {
       smallTrash.isSpawned = true;
     }
 
-    if (Math.random() < 0.001 && !bigTrash.isSpawned){
+    if (Math.random() < 0.001*occurence && !bigTrash.isSpawned){
       const random = Math.random();
       if (random<=0.33){
         bigTrash.y = canvas.height-ground.height-96;
@@ -207,13 +274,14 @@ function update() {
       bigTrash.isSpawned = true;
     }
 
-    if (Math.random() < 0.002 && !deadlyTrash.isSpawned){
+    if (Math.random() < 0.002*occurence && !deadlyTrash.isSpawned){
       deadlyTrash.y = canvas.height-ground.height-110;
       deadlyTrash.isSpawned = true;
     }
 
     
-    if (score>0 && score%400 == 0 && !trashCan.isSpawned){
+    if (score>0 && score%(200*occurence) == 0 && !trashCan.isSpawned){
+      trashCan.current = openTrashCan;
       trashCan.y = canvas.height-ground.height-96;
       trashCan.isSpawned = true;
     }
@@ -391,10 +459,16 @@ function update() {
     ctx.strokeStyle = "red";
     ctx.strokeRect(10, 30, 100, 10);
     ctx.fillRect(10 , 30, pollution.amount, 10);
+    ctx.fillText("Inventory: "+player.inventory, 10, 60);
   }
   
   // Set up game loop
   function loop() {
+    if(player.isDead){
+      stopGame();
+      gameStarted = false;
+      return;
+    }
     if(!isPlaying){
       return;
     }
@@ -406,6 +480,7 @@ function update() {
   // Start game
   function startGame() {
     // Reset game variables
+    player.isDead = false;
     bgm.currentTime = 0;
     bgm.play();
     midAir=0;
@@ -413,10 +488,11 @@ function update() {
     isJumping = false;
     score = 0;
     ground.x = 0;
-    player.x = 50;
+    player.x = 100;
     player.y = groundYPosition;
     player.current = 0;
     player.jumpUp = true;
+    player.inventory = 0;
     smallTrash.x = canvas.width;
     smallTrash.isSpawned = false;
     bigTrash.x = canvas.width;
@@ -425,17 +501,22 @@ function update() {
     deadlyTrash.isSpawned = false;
     trashCan.x = canvas.width;
     trashCan.isSpawned = false;
+    trashCan.current = openTrashCan;
     ctx.textAlign = "left";
+    smokeBigCloud.y = -500;
+    pollution.amount = 0;
     // Start game loop
     loop();
   }
   function stopGame() {
     ctx.font = "70px Arial";
     ctx.textAlign = "center";
+    ctx.fillStyle = "black";
     ctx.fillText("Game Over", canvas.width/2, canvas.height/2);
     ctx.font = "35px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText("Score: "+score, canvas.width/2, canvas.height/2+70);
+    ctx.fillText("Score: "+score, canvas.width/2, canvas.height/2+60);
+    ctx.font = "20px Arial";
+    ctx.fillText("Press Enter to try again", canvas.width/2, canvas.height/2+120);
     isPlaying = false;
     score = 0;
     ground.x = 0;
@@ -444,21 +525,20 @@ function update() {
     
   }
 
-  function restartGame() {
-    if (isPlaying && startButton.innerHTML === 'Stop Game'){
-      stopGame();
-    }
-    else if(!isPlaying && startButton.innerHTML === 'Start Game'){
-      startGame();
-    }
-  }
-
   function pauseGame(){
-    if (isPlaying && pauseButton.innerHTML === 'Pause'){
+    if (isPlaying){
       isPlaying = false;
       bgm.pause();
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = "Black";
+      ctx.fillRect(0,0,canvas.width,canvas.height)
+      ctx.textAlign = "center";
+      ctx.fillStyle = "white";
+      ctx.font = "20px Arial";
+      ctx.fillText("Paused", canvas.width/2, canvas.height/2);
+      ctx.textAlign = "left";
     }
-    else if(!isPlaying && pauseButton.innerHTML === 'Resume'){
+    else if(!isPlaying){
       isPlaying = true;
       bgm.play();
       loop();
@@ -474,33 +554,26 @@ function update() {
       return;
     }
   }
-// Add event listener to start button
 
-startButton.addEventListener('click', function() {
-  if (startButton.innerHTML === 'Start Game') {
-    restartGame();
-    pauseButton.style.display = 'block';
-    startButton.innerHTML = 'Stop Game';
-  } else {
-    restartGame();
-    startButton.innerHTML = 'Start Game';
-    pauseButton.style.display = 'none';
-    pauseButton.innerHTML = 'Pause';
-  }
-});
-pauseButton.addEventListener('click', function() {
-  if (pauseButton.innerHTML === 'Pause') {
-    pauseGame();
-    pauseButton.innerHTML = 'Resume';
-  } else {
-    pauseGame();
-    pauseButton.innerHTML = 'Pause';
-  }
-});
+window.onload = function() {
+  ctx.drawImage(MainMenu, 0, 0, MainMenu.width, MainMenu.height, 0, 0, canvas.width, canvas.height);
+}
+// Add event listener to start button
 let keyDownTime = 0;
 let elapsedTime = 0;
 let spaceKeyDown = false;
-
+document.addEventListener('keydown', function(event){if (event.code === 'Enter' && !gameStarted){
+  startGame();
+  gameStarted = true;
+}});
+document.addEventListener('keydown', function(event){if (event.code === 'Escape' && gameStarted){
+  pauseGame();
+}})
+document.addEventListener('keydown', function(event){if (event.code === 'Delete' && gameStarted){
+  stopGame();
+  gameStarted = false;
+}});
+document.addEventListener
 document.addEventListener('keydown', function(event) {
   if (event.code === 'Space' && !spaceKeyDown) {
     keyDownTime = Date.now();
